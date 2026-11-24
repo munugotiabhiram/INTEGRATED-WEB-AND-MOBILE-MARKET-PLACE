@@ -1,0 +1,15 @@
+# The deployable web app is the Vite + React frontend in integrated-marketplace/frontend.
+# Dependencies are installed explicitly so the build works even where no automatic install runs.
+[build]
+  base = "integrated-marketplace/frontend"
+  command = "npm ci && npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# The frontend uses client-side routing (BrowserRouter), so serve index.html for deep links.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

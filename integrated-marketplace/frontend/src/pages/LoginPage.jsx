@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, LogIn, Sparkles, ShieldCheck, User } from 'lucide-react';
+import { Mail, Lock, LogIn, Sparkles, ShieldCheck, User, Eye, EyeOff, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useApp } from '../context';
 
 const LoginPage = () => {
@@ -9,29 +9,48 @@ const LoginPage = () => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    if (!email.trim() || !password.trim()) {
+      setErrorMessage('Please enter both email and password.');
+      return;
+    }
+
     setLoading(true);
     const result = await login(email, password);
     setLoading(false);
+
     if (result.success) {
-      if (result.user.role === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/products');
-      }
+      setSuccessMessage(`Login successful! Redirecting as ${result.user.role}...`);
+      setTimeout(() => {
+        if (result.user.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/products');
+        }
+      }, 700);
+    } else {
+      setErrorMessage(result.error || 'Invalid email or password. Please try again.');
     }
   };
 
-  // Demo autofill helpers
+  // Demo autofill helpers (clears errors and autofills)
   const handleFillAdmin = () => {
+    setErrorMessage('');
     setEmail('admin@marketplace.com');
     setPassword('admin123');
   };
 
   const handleFillCustomer = () => {
+    setErrorMessage('');
     setEmail('john@example.com');
     setPassword('password123');
   };
@@ -77,10 +96,10 @@ const LoginPage = () => {
             border: '1px solid var(--border-glass)',
             borderRadius: '14px',
             padding: '12px 14px',
-            marginBottom: '24px'
+            marginBottom: '20px'
           }}>
             <div style={{ fontSize: '0.75rem', color: 'var(--neon-cyan)', fontWeight: 700, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              ⚡ Instant College Demo Credentials
+              ⚡ Instant One-Click Demo Accounts
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button
@@ -96,7 +115,7 @@ const LoginPage = () => {
                   color: '#ff70a6'
                 }}
               >
-                <ShieldCheck size={14} /> Admin Account
+                <ShieldCheck size={14} /> Admin (admin123)
               </button>
               <button
                 type="button"
@@ -111,10 +130,48 @@ const LoginPage = () => {
                   color: 'var(--neon-cyan)'
                 }}
               >
-                <User size={14} /> Customer Account
+                <User size={14} /> Customer (pass123)
               </button>
             </div>
           </div>
+
+          {/* Inline Error Banner */}
+          {errorMessage && (
+            <div style={{
+              background: 'rgba(255, 0, 127, 0.12)',
+              border: '1px solid rgba(255, 0, 127, 0.5)',
+              borderRadius: '12px',
+              padding: '12px 14px',
+              marginBottom: '18px',
+              color: '#ff70a6',
+              fontSize: '0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}>
+              <AlertCircle size={18} style={{ flexShrink: 0 }} />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
+          {/* Inline Success Banner */}
+          {successMessage && (
+            <div style={{
+              background: 'rgba(0, 245, 212, 0.12)',
+              border: '1px solid rgba(0, 245, 212, 0.5)',
+              borderRadius: '12px',
+              padding: '12px 14px',
+              marginBottom: '18px',
+              color: 'var(--neon-cyan)',
+              fontSize: '0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}>
+              <CheckCircle2 size={18} style={{ flexShrink: 0 }} />
+              <span>{successMessage}</span>
+            </div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
@@ -128,7 +185,10 @@ const LoginPage = () => {
                   required
                   placeholder="name@example.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (errorMessage) setErrorMessage('');
+                  }}
                   className="input-3d"
                   style={{ paddingLeft: '42px' }}
                 />
@@ -142,15 +202,37 @@ const LoginPage = () => {
               </label>
               <div style={{ position: 'relative' }}>
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
                   placeholder="••••••••"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (errorMessage) setErrorMessage('');
+                  }}
                   className="input-3d"
-                  style={{ paddingLeft: '42px' }}
+                  style={{ paddingLeft: '42px', paddingRight: '42px' }}
                 />
                 <Lock size={18} color="var(--neon-cyan)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
 
@@ -161,7 +243,7 @@ const LoginPage = () => {
               style={{ width: '100%', padding: '14px', fontSize: '1rem', marginTop: '10px' }}
             >
               <LogIn size={18} />
-              <span>{loading ? 'Authenticating with MySQL...' : 'Sign In'}</span>
+              <span>{loading ? 'Authenticating with Backend...' : 'Sign In'}</span>
             </button>
           </form>
 

@@ -109,13 +109,20 @@ export const AppProvider = ({ children }) => {
   // 6. Login
   const login = async (email, password) => {
     try {
-      const res = await axios.post(`${API_BASE}/users/login`, { email, password });
+      const cleanEmail = (email || '').trim().toLowerCase();
+      const cleanPassword = (password || '').trim();
+      const res = await axios.post(`${API_BASE}/users/login`, { email: cleanEmail, password: cleanPassword });
       setToken(res.data.token);
       setUser(res.data.user);
       showToast(`Welcome back, ${res.data.user.name}! ✨`, 'success');
       return { success: true, user: res.data.user };
     } catch (err) {
-      const msg = err.response?.data?.message || 'Login failed. Please check credentials.';
+      let msg = 'Login failed. Please check credentials.';
+      if (err.response?.data?.message) {
+        msg = err.response.data.message;
+      } else if (err.code === 'ERR_NETWORK' || (err.message && err.message.toLowerCase().includes('network error'))) {
+        msg = `Cannot connect to backend server at ${API_BASE}. Make sure the Node.js backend is running on port 5000.`;
+      }
       showToast(msg, 'error');
       return { success: false, error: msg };
     }

@@ -25,7 +25,7 @@ const fallbackStore = {
       id: 1,
       name: 'Admin Director',
       email: 'admin@marketplace.com',
-      password: '$2a$10$wK1k6i/3fVf3Wj0GgY.l1OsqQG66vM1K.d3.n5xUeBvRkYv.08eSm', // admin123
+      password: '$2a$10$VGoGm75vOiXVg1hmWwwSCO8CdgaAkpOQX157olhhhxgL4C7pVQqXi', // admin123
       phone: '+1 555-0199',
       address: 'Marketplace Headquarters, 100 Innovation Blvd, Tech City',
       role: 'admin',
@@ -35,7 +35,7 @@ const fallbackStore = {
       id: 2,
       name: 'John Doe',
       email: 'john@example.com',
-      password: '$2a$10$wK1k6i/3fVf3Wj0GgY.l1OsqQG66vM1K.d3.n5xUeBvRkYv.08eSm', // password123 / admin123 compatible
+      password: '$2a$10$3AZ.1wqZmOI0Mwx7nDr.GeqHaHesZP8koMK5TqKyWKJc5eFu9qzs6', // password123
       phone: '+1 555-0142',
       address: '742 Evergreen Terrace, Springfield, OR 97477',
       role: 'customer',
@@ -45,7 +45,7 @@ const fallbackStore = {
       id: 3,
       name: 'Sarah Connor',
       email: 'sarah@example.com',
-      password: '$2a$10$wK1k6i/3fVf3Wj0GgY.l1OsqQG66vM1K.d3.n5xUeBvRkYv.08eSm',
+      password: '$2a$10$3AZ.1wqZmOI0Mwx7nDr.GeqHaHesZP8koMK5TqKyWKJc5eFu9qzs6', // password123
       phone: '+1 555-0188',
       address: '1240 Cyberdyne Way, Los Angeles, CA 90001',
       role: 'customer',
@@ -327,10 +327,10 @@ function executeFallbackQuery(sql, params) {
   const lower = cleanSql.toLowerCase();
 
   // 1. SELECT USERS
-  if (lower.startsWith('select') && lower.includes('from users') || lower.includes('from `users`')) {
-    if (lower.includes('where email =') || lower.includes('where `email` =')) {
-      const email = params[0];
-      const user = fallbackStore.users.find(u => u.email.toLowerCase() === (email || '').toLowerCase());
+  if (lower.startsWith('select') && (lower.includes('from users') || lower.includes('from `users`'))) {
+    if (lower.includes('where lower(trim(email))') || lower.includes('where email =') || lower.includes('where `email` =')) {
+      const email = String(params[0] || '').trim().toLowerCase();
+      const user = fallbackStore.users.find(u => String(u.email || '').trim().toLowerCase() === email);
       return [[user ? { ...user } : undefined].filter(Boolean)];
     }
     if (lower.includes('where id =') || lower.includes('where `id` =')) {
@@ -478,15 +478,18 @@ function executeFallbackQuery(sql, params) {
       .filter(ci => ci.cart_id === cartId)
       .map(ci => {
         const prod = fallbackStore.products.find(p => p.id === ci.product_id) || {};
+        const unitPrice = parseFloat(prod.price || 0);
         return {
           id: ci.id,
+          cart_item_id: ci.id,
           cart_id: ci.cart_id,
           product_id: ci.product_id,
           quantity: ci.quantity,
           name: prod.name || 'Product',
-          price: prod.price || 0,
+          price: unitPrice,
           image_url: prod.image_url || '',
-          stock: prod.stock || 0
+          stock: prod.stock || 0,
+          subtotal: parseFloat((ci.quantity * unitPrice).toFixed(2))
         };
       });
     return [items];

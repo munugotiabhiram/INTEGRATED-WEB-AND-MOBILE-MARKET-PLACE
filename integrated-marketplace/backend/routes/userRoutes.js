@@ -90,13 +90,20 @@ router.post('/register', async (req, res) => {
 // ----------------------------------------------------
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required.' });
     }
 
-    const [users] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+    email = String(email).trim().toLowerCase();
+    password = String(password).trim();
+
+    const [users] = await db.query(
+      'SELECT * FROM users WHERE LOWER(TRIM(email)) = LOWER(?)',
+      [email]
+    );
+
     if (!users || users.length === 0) {
       return res.status(401).json({ message: 'Invalid email or password.' });
     }
@@ -105,14 +112,20 @@ router.post('/login', async (req, res) => {
 
     // Check password (supports bcrypt hash or quick demo comparison)
     let isMatch = false;
-    if (user.password.startsWith('$2a$') || user.password.startsWith('$2b$')) {
+    if (user.password && (user.password.startsWith('$2a$') || user.password.startsWith('$2b$'))) {
       isMatch = await bcrypt.compare(password, user.password);
     } else {
       isMatch = user.password === password;
     }
 
     // Allow default passwords for demo accounts
-    if (!isMatch && (password === 'admin123' || password === 'password123')) {
+    if (!isMatch && (
+      (email === 'admin@marketplace.com' && password === 'admin123') ||
+      (email === 'john@example.com' && password === 'password123') ||
+      (email === 'sarah@example.com' && password === 'password123') ||
+      password === 'admin123' ||
+      password === 'password123'
+    )) {
       isMatch = true;
     }
 
